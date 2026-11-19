@@ -28,6 +28,8 @@ public interface IPontoMonitoramentoRepository
         CancellationToken cancellationToken = default
     );
 
+    void Remover(PontoMonitoramento ponto);
+
     Task SalvarAlteracoesAsync(
         CancellationToken cancellationToken = default
     );

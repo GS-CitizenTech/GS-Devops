@@ -1,3 +1,4 @@
+
 using AlertaCidadao.Application.Interfaces;
 using AlertaCidadao.Domain.Entities;
 using AlertaCidadao.Infrastructure.Persistence;
@@ -81,11 +82,6 @@ public sealed class PontoMonitoramentoRepository
         );
 
         await _context.SaveChangesAsync(cancellationToken);
-    }
-
-    public void Remover(PontoMonitoramento ponto)
-    {
-        _context.PontosMonitoramento.Remove(ponto);
     }
 
     public async Task SalvarAlteracoesAsync(

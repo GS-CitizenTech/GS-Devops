@@ -10,7 +10,7 @@ variables:
   - name: buildConfiguration
     value: Release
   - name: webAppName
-    value: app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net
+    value: app-alertacidadao-rm563088
   - name: resourceGroup
     value: rg-sprint4
 

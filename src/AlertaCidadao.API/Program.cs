@@ -132,7 +132,7 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Ok(new
 {
     aplicacao = "AlertaCidadao",
-    mensagem = "API de monitoramento de enchentes em execução - v2.",
+    mensagem = "API de monitoramento de enchentes em execução - v3.",
     documentacao = "/swagger"
 }))
 .WithName("Inicio")

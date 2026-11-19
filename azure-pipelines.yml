@@ -1,0 +1,83 @@
+# CI + CD - Sprint 4 - AlertaCidadao (.NET 9 + Oracle FIAP + Azure Web App)
+trigger:
+  branches:
+    include: [ master ]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: sprint4-secrets        # Library > Variable group: ORACLE_CONNECTION_STRING e JWT_SIGNING_KEY (secretas)
+  - name: buildConfiguration
+    value: Release
+  - name: webAppName
+    value: app-alertacidadao-rm563088   # troque pelo nome do seu Web App
+  - name: resourceGroup
+    value: rg-sprint4
+
+stages:
+  - stage: CI
+    displayName: CI - Build, testes e artefato
+    jobs:
+      - job: Build
+        steps:
+          - task: UseDotNet@2
+            displayName: Instalar .NET 10
+            inputs: { packageType: sdk, version: 10.x }
+          - script: dotnet restore AlertaCidadao.sln
+            displayName: Restore
+          - script: dotnet build AlertaCidadao.sln --configuration $(buildConfiguration) --no-restore
+            displayName: Build
+          - task: DotNetCoreCLI@2
+            displayName: Testes automatizados (xUnit)
+            inputs:
+              command: test
+              projects: test/**/*.csproj
+              arguments: --configuration $(buildConfiguration) --no-build
+              publishTestResults: true
+          - task: DotNetCoreCLI@2
+            displayName: Publish da API
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: src/AlertaCidadao.API/AlertaCidadao.API.csproj
+              arguments: --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+              zipAfterPublish: true
+          - task: PublishBuildArtifacts@1
+            displayName: Publicar artefato
+            inputs:
+              PathtoPublish: $(Build.ArtifactStagingDirectory)
+              ArtifactName: drop
+
+  - stage: CD
+    displayName: CD - Deploy no Azure Web App
+    dependsOn: CI
+    condition: succeeded()
+    jobs:
+      - deployment: Deploy
+        environment: producao
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureAppServiceSettings@1
+                  displayName: Configuracoes protegidas (Oracle + JWT)
+                  inputs:
+                    azureSubscription: sc-azure-sprint4   # Service connection
+                    appName: $(webAppName)
+                    resourceGroupName: $(resourceGroup)
+                    appSettings: |
+                      [
+                        { "name": "ConnectionStrings__Oracle", "value": "$(ORACLE_CONNECTION_STRING)", "slotSetting": false },
+                        { "name": "Jwt__SigningKey", "value": "$(JWT_SIGNING_KEY)", "slotSetting": false },
+                        { "name": "Jwt__Issuer", "value": "AlertaCidadao.API", "slotSetting": false },
+                        { "name": "Jwt__Audience", "value": "AlertaCidadao.Client", "slotSetting": false }
+                      ]
+                - task: AzureWebApp@1
+                  displayName: Deploy Web App
+                  inputs:
+                    azureSubscription: sc-azure-sprint4
+                    appType: webAppLinux
+                    appName: $(webAppName)
+                    package: $(Pipeline.Workspace)/drop/**/*.zip
+                    runtimeStack: DOTNETCORE|10.0

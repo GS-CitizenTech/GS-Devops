@@ -72,7 +72,7 @@ O professor é convidado no projeto do Azure DevOps com acesso **Basic**.
 
 **Variáveis protegidas:** o variable group `sprint4-secrets` (Pipelines > Library) guarda `ORACLE_CONNECTION_STRING` e `JWT_SIGNING_KEY` como secretas. Nenhuma senha ou chave fica no repositório.
 
-**Aplicação publicada:** `https://SEU-WEBAPP.azurewebsites.net` · Swagger em `/swagger` · Health check em `/health/ready`
+**Aplicação publicada:** `app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net` · Swagger em `/swagger` · Health check em `/health/ready`
 
 ### Evidências do CRUD no banco
 

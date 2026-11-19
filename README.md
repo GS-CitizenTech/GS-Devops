@@ -1,6 +1,6 @@
 # Alerta Cidadão — CitizenTech
 
-Sistema de monitoramento e gerenciamento de alertas relacionados a enchentes, desenvolvido em .NET 9, com integração ao banco de dados Oracle e recursos de segurança, confiabilidade e monitoramento.
+Sistema de monitoramento e gerenciamento de alertas relacionados a enchentes, desenvolvido em .NET 10, com integração ao banco de dados Oracle e recursos de segurança, confiabilidade e monitoramento.
 
 ## Integrantes
 
@@ -30,7 +30,7 @@ A aplicação disponibiliza uma API REST para gerenciamento de usuários e infor
 | Tecnologia | Finalidade |
 |---|---|
 | C# | Linguagem de programação |
-| .NET 9 | Plataforma de desenvolvimento |
+| .NET 10 | Plataforma de desenvolvimento |
 | ASP.NET Core | Construção da API REST |
 | Oracle Database | Banco de dados relacional |
 | Entity Framework Core | Persistência e acesso a dados |
@@ -48,7 +48,7 @@ A aplicação disponibiliza uma API REST para gerenciamento de usuários e infor
 
 1. O desenvolvedor faz commit e `git push` na branch `master` do GitHub.
 2. O push dispara automaticamente a pipeline no Azure DevOps (`azure-pipelines.yml`).
-3. **CI:** restore e build da `AlertaCidadao.sln` com .NET 9.
+3. **CI:** restore e build da `AlertaCidadao.sln` com .NET 10.
 4. **CI:** execução dos 34 testes automatizados (xUnit), com resultados publicados na aba *Tests*.
 5. **CI:** publish da API e publicação do artefato `drop` no Azure DevOps.
 6. **CD:** o stage de deploy começa somente após o novo artefato ser gerado com sucesso.
@@ -62,13 +62,13 @@ O professor é convidado no projeto do Azure DevOps com acesso **Basic**.
 
 | Stage | Task | O que faz |
 |---|---|---|
-| CI | UseDotNet | Instala o .NET 9 no agente |
+| CI | UseDotNet | Instala o .NET 10 no agente |
 | CI | Restore / Build | Restaura pacotes e compila a solução em Release |
 | CI | DotNetCoreCLI test | Executa os testes e publica os resultados |
 | CI | DotNetCoreCLI publish | Gera o pacote .zip da `AlertaCidadao.API` |
 | CI | PublishBuildArtifacts | Publica o artefato `drop` |
 | CD | AzureAppServiceSettings | Grava a connection string do Oracle e a chave JWT no Web App |
-| CD | AzureWebApp | Faz o deploy do artefato no Azure Web App (Linux, .NET 9) |
+| CD | AzureWebApp | Faz o deploy do artefato no Azure Web App (Linux, .NET 10) |
 
 **Variáveis protegidas:** o variable group `sprint4-secrets` (Pipelines > Library) guarda `ORACLE_CONNECTION_STRING` e `JWT_SIGNING_KEY` como secretas. Nenhuma senha ou chave fica no repositório.
 
@@ -125,7 +125,7 @@ GS-.NET/
 
 Antes de executar o projeto, é necessário ter instalado:
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [Oracle Database](https://www.oracle.com/database/)
 - [Git](https://git-scm.com/)
 - Visual Studio ou Visual Studio Code (opcional)

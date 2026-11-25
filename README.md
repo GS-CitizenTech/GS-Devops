@@ -132,86 +132,128 @@ GS-.NET/
 - **Infrastructure:** implementa os recursos de infraestrutura, incluindo persistência e acesso ao Oracle.
 - **UnitTests:** contém os testes automatizados da solução.
 
-## Pré-requisitos
+## Passo a passo: do clone à entrega
 
-Antes de executar o projeto, é necessário ter instalado:
+Os comandos abaixo são para **Windows usando Git Bash**. Execute-os na ordem e use barras `/` nos caminhos. Não coloque senhas, connection strings ou chaves JWT em arquivos do repositório.
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- Azure CLI, autenticado na assinatura que contém os recursos
-- [Oracle Database](https://www.oracle.com/database/)
-- [Git](https://git-scm.com/)
-- Visual Studio ou Visual Studio Code (opcional)
+### 1. Instale e confira os programas
 
-## Configuração do projeto
+Instale o [Git para Windows](https://git-scm.com/download/win) e o [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0). Para provisionar recursos na nuvem, instale também o [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli). Você precisa ter acesso aos dados de conexão Oracle fornecidos pela FIAP.
 
-As configurações sensíveis devem ser armazenadas utilizando o **.NET User Secrets**, evitando a inclusão de senhas, chaves JWT e credenciais no repositório.
+No Git Bash, confira o SDK:
 
-Acesse a pasta da API:
-
-```powershell
-cd src/AlertaCidadao.API
+```bash
+dotnet --version
 ```
 
-Inicialize o User Secrets, caso ainda não esteja configurado:
+O resultado deve começar com `10.`.
 
-```powershell
-dotnet user-secrets init
+### 2. Clone o repositório Azure DevOps
+
+No Azure DevOps, abra **Repos > Files > Clone** e confirme que a URL corresponde ao repositório da equipe. No Git Bash:
+
+```bash
+cd ~/Desktop
+git clone "https://dev.azure.com/alertacidadao-rm563088/Sprint%204%20%E2%80%93%20Azure%20DevOps/_git/Sprint%204%20%E2%80%93%20Azure%20DevOps" GS-Devops
+cd GS-Devops
+git switch main
+git pull origin main
+ls
 ```
 
-Configure a conexão com o Oracle:
+Confirme que aparecem `AlertaCidadao.sln`, `src`, `test` e `scripts`. Se a pasta já existir, entre nela com `cd ~/Desktop/GS-Devops` e atualize com `git pull origin main`; não faça outro clone dentro dela.
 
-```powershell
-dotnet user-secrets set "ConnectionStrings:Oracle" "SUA_CONNECTION_STRING"
-```
+### 3. Prepare o banco Oracle
 
-Configure os parâmetros de autenticação JWT:
+No Oracle da FIAP, execute `scripts/script-bd.sql` uma vez para criar as tabelas do projeto. Use o usuário, host, porta e nome do serviço Oracle fornecidos pela FIAP; não use literalmente `HOST` ou `SERVICE_NAME` como valores.
 
-```powershell
-dotnet user-secrets set "Jwt:Issuer" "AlertaCidadao.API"
-dotnet user-secrets set "Jwt:Audience" "AlertaCidadao.Client"
-dotnet user-secrets set "Jwt:SigningKey" "SUA_CHAVE_SECRETA"
-dotnet user-secrets set "Jwt:ExpirationMinutes" "60"
-```
-
-> Utilize os mesmos valores de Issuer, Audience e demais configurações esperados pela aplicação. A chave JWT deve ser forte e mantida em segredo.
-
-## Como executar a aplicação
-
-Na raiz do repositório, restaure as dependências:
-
-```powershell
-dotnet restore .\AlertaCidadao.sln
-```
-
-Compile a solução:
-
-```powershell
-dotnet build .\AlertaCidadao.sln
-```
-
-Execute a API:
-
-```powershell
-dotnet run --project .\src\AlertaCidadao.API
-```
-
-A aplicação estará disponível em:
+O formato comum da connection string é:
 
 ```text
-http://localhost:5075
+User Id=SEU_RM;Password=SUA_SENHA;Data Source=//HOST_ORACLE:1521/NOME_DO_SERVICO
 ```
 
-## Provisionar a infraestrutura
+### 4. Configure os segredos para execução local
 
-O script usa Azure CLI, cria apenas recursos ausentes e reutiliza por padrão os nomes e a região da implantação atual. O plano padrão é F1. Antes de executar, autentique-se com `az login` e selecione a assinatura correta com `az account set --subscription <ID-ou-nome>`.
+Na raiz `GS-Devops`, rode. O projeto já contém um `UserSecretsId`, então não é necessário inicializar novamente:
+
+```bash
+cd src/AlertaCidadao.API
+dotnet user-secrets set "ConnectionStrings:Oracle" "User Id=SEU_RM;Password=SUA_SENHA;Data Source=//HOST_ORACLE:1521/NOME_DO_SERVICO"
+dotnet user-secrets set "Jwt:Issuer" "AlertaCidadao.API"
+dotnet user-secrets set "Jwt:Audience" "AlertaCidadao.Client"
+dotnet user-secrets set "Jwt:SigningKey" "$(openssl rand -hex 32)"
+dotnet user-secrets set "Jwt:ExpirationMinutes" "60"
+cd ../..
+```
+
+Troque os dados Oracle pelos valores reais da FIAP. O comando `openssl` gera uma chave JWT forte. User Secrets ficam na máquina do aluno e não devem ser enviados ao Git.
+
+### 5. Restaure, compile, teste e execute a API
+
+Estes comandos devem ser executados na raiz do repositório. No Git Bash, use os caminhos com `/` abaixo.
+
+```bash
+dotnet restore AlertaCidadao.sln
+dotnet build AlertaCidadao.sln --configuration Release
+dotnet test AlertaCidadao.sln --configuration Release
+dotnet run --project src/AlertaCidadao.API
+```
+
+Com a API em execução, abra `http://localhost:5075/swagger`. Para encerrar, volte ao Git Bash da API e pressione `Ctrl+C`.
+
+### 6. Crie ou confira os recursos Azure pela Azure CLI
+
+Entre na conta que contém a assinatura autorizada pela FIAP e selecione a assinatura correta:
+
+```bash
+az login
+az account list --output table
+az account set --subscription "ID_OU_NOME_DA_ASSINATURA"
+```
+
+Na raiz do repositório, execute o script solicitado na entrega:
 
 ```bash
 bash scripts/provision-azure.sh
 ```
 
-É possível informar `RESOURCE_GROUP`, `LOCATION`, `PLAN_NAME`, `PLAN_SKU` e `WEB_APP_NAME` como variáveis de ambiente. Alterar `PLAN_SKU` para uma opção paga pode gerar cobrança. O script não configura segredos; isso é feito pela Library do Azure Pipelines.
+O script cria os recursos que estiverem faltando e reutiliza por padrão `rg-sprint4`, região `brazilsouth`, plano Linux F1 e Web App do projeto. Ele cria recursos de hospedagem; **não** cria o banco Oracle nem configura os segredos do pipeline. SKU paga pode gerar cobrança.
 
-O DDL está em `scripts/script-bd.sql`. Ele cria as cinco tabelas usadas pela aplicação: `USUARIO`, `PONTO_MONITORAMENTO`, `LEITURA_ENCHENTE`, `ALERTA` e `REQUISICAO_IDEMPOTENCIA`.
+### 7. Confira as configurações do Azure Pipelines
+
+Em **Pipelines > Library**, confira o variable group `sprint4-secrets` e configure como secretos `ORACLE_CONNECTION_STRING` e `JWT_SIGNING_KEY`. Confirme que o pipeline está autorizado a usar o grupo. Em **Project Settings > Service connections**, confira `sc-azure-sprint4`; em **Pipelines > Environments**, confira o ambiente `producao`. Não mostre valores secretos na gravação.
+
+### 8. Convide o professor e proteja a branch principal
+
+Mantenha o projeto privado e siga o requisito da FIAP para adicionar o professor: nível **Basic** na organização e **Project Administrators** no projeto, usando somente o e-mail oficial informado pela FIAP. Em **Repos > Branches**, confira que `main` recebe alterações por pull request, exige revisor e exige vínculo com uma tarefa do Azure Boards.
+
+### 9. Crie uma tarefa, uma branch e um pull request
+
+Crie uma tarefa no **Azure Boards**. A partir da tarefa, crie uma branch vinculada, por exemplo `feature/AB123-ajuste-validacao` (troque `123` pelo ID real). Faça uma alteração de código relacionada à tarefa. No Git Bash, adicione o arquivo alterado, faça commit vinculado ao ID e envie a branch:
+
+```bash
+git switch -c feature/AB123-ajuste-validacao
+git add "CAMINHO_DO_ARQUIVO_ALTERADO"
+git commit -m "AB#123 Ajusta validacao da API"
+git push -u origin feature/AB123-ajuste-validacao
+```
+
+Crie um **Pull Request** da branch para `main`, vincule a tarefa, peça a revisão exigida e conclua o merge após a aprovação. Substitua `123` nos exemplos pelo ID real. Não faça push direto para `main`.
+
+### 10. Confira a execução automática e a publicação
+
+Depois do merge, abra **Pipelines > Runs** e confira a execução disparada para `main`: CI, testes, artefato `drop` e etapa CD precisam terminar com sucesso. Não use apenas uma execução manual como prova do gatilho automático. Confira a API publicada, o Swagger e o health check:
+
+- [API publicada](https://app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net)
+- [Swagger](https://app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net/swagger)
+- [Health check de prontidão](https://app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net/health/ready)
+
+### 11. Grave e entregue a apresentação
+
+Use [o roteiro de apresentação e demonstração](docs/roteiro-apresentacao.md). Na gravação, mostre o clone, a tarefa e branch vinculadas, o PR e merge, a execução automática completa, a API publicada e as operações POST/GET/PUT/DELETE no Swagger. Comprove a persistência no SQL Developer nas cinco tabelas listadas abaixo; após exclusão lógica, mostre também a coluna de status correspondente. Entregue o PDF com os nomes, RMs, endereço do Azure DevOps e link do vídeo conforme o padrão pedido pela FIAP. Antes de enviar, confirme que o vídeo está acessível ao professor.
+
+O script de provisionamento fica em `scripts/provision-azure.sh`; o DDL do banco fica em `scripts/script-bd.sql`. As tabelas são `USUARIO`, `PONTO_MONITORAMENTO`, `LEITURA_ENCHENTE`, `ALERTA` e `REQUISICAO_IDEMPOTENCIA`.
 
 ## Documentação da API
 
@@ -290,13 +332,13 @@ A solução possui testes automatizados utilizando xUnit.
 Para executar todos os testes:
 
 ```powershell
-dotnet test .\AlertaCidadao.sln --configuration Release
+dotnet test AlertaCidadao.sln --configuration Release
 ```
 
 Para executar com informações detalhadas:
 
 ```powershell
-dotnet test .\AlertaCidadao.sln --configuration Release --logger "console;verbosity=normal"
+dotnet test AlertaCidadao.sln --configuration Release --logger "console;verbosity=normal"
 ```
 
 ### Cobertura dos testes implementados

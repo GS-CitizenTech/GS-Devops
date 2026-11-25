@@ -1,16 +1,15 @@
 flowchart LR
-  DEV([Desenvolvedor - Rider]) -->|1 git push master| GH[GitHub GS-CitizenTech/GS-Dotnet]
-  subgraph ADO[Azure DevOps - Sprint 4 - Azure DevOps]
-    GH -->|2 gatilho| CI[CI: 3 restore+build / 4 34 testes xUnit / 5 artefato drop]
-    CI -->|6 novo artefato| CD[CD: configuracoes + deploy]
-    LIB[(Library: sprint4-secrets)] -.-> CD
+  DEV[Equipe] --> WI[Azure Boards<br/>Work Item]
+  WI --> BR[Azure Repos<br/>branch da tarefa + PR]
+  BR --> MAIN[Main protegida<br/>merge do PR]
+  subgraph ADO[Azure DevOps - projeto privado]
+    MAIN --> CI[CI<br/>.NET 10 + xUnit]
+    CI --> ART[Artefato drop<br/>API publicada]
+    ART --> CD[CD após CI<br/>deploy automático]
+    SEC[(Library<br/>sprint4-secrets)] -. configurações .-> CD
   end
-  subgraph AZ[Microsoft Azure - rg-sprint4]
-    CD -->|7 deploy| WEB[Azure Web App .NET 9 - AlertaCidadao.API]
+  subgraph AZ[Azure - rg-sprint4 / Brazil South]
+    CD --> WEB[App Service Linux<br/>AlertaCidadao API]
   end
-  subgraph FIAP[FIAP - banco em nuvem]
-    ORA[(Oracle Database oracle.fiap.com.br)]
-  end
-  WEB -->|8 EF Core Oracle| ORA
-  USER([Usuario final - Cidadao/Gestor]) -->|9 HTTPS + JWT| WEB
-  PROF([Professor - Basic]) -.-> ADO
+  WEB -->|EF Core| ORA[(Oracle FIAP)]
+  USER[Usuário / gestor] -->|HTTPS + JWT| WEB

@@ -1,6 +1,9 @@
+# CI starts on updates to Main, which are protected by Azure Repos branch policy.
+# Use required reviewer + linked work item policies; do not allow direct pushes.
 trigger:
   branches:
-    include: [ master ]
+    include:
+      - main
 
 pool:
   vmImage: ubuntu-latest
@@ -22,7 +25,9 @@ stages:
         steps:
           - task: UseDotNet@2
             displayName: Instalar .NET 10
-            inputs: { packageType: sdk, version: 10.x }
+            inputs:
+              packageType: sdk
+              version: 10.x
           - script: dotnet restore AlertaCidadao.sln
             displayName: Restore
           - script: dotnet build AlertaCidadao.sln --configuration $(buildConfiguration) --no-restore
@@ -35,7 +40,7 @@ stages:
               arguments: --configuration $(buildConfiguration) --no-build
               publishTestResults: true
           - task: DotNetCoreCLI@2
-            displayName: Publish da API
+            displayName: Publicar API
             inputs:
               command: publish
               publishWebProjects: false
@@ -60,9 +65,9 @@ stages:
             deploy:
               steps:
                 - task: AzureAppServiceSettings@1
-                  displayName: Configuracoes protegidas (Oracle + JWT)
+                  displayName: Configurações protegidas (Oracle + JWT)
                   inputs:
-                    azureSubscription: sc-azure-sprint4   # Service connection
+                    azureSubscription: sc-azure-sprint4
                     appName: $(webAppName)
                     resourceGroupName: $(resourceGroup)
                     appSettings: |

@@ -57,7 +57,7 @@ public sealed class UsuarioServiceTests
 
         Assert.False(resultado.Sucesso);
         Assert.Equal(TipoErroOperacao.Conflito, resultado.TipoErro);
-        Assert.Equal(1, _repository.Usuarios.Count);
+        Assert.Single(_repository.Usuarios);
         Assert.Equal(0, _repository.Adicoes);
     }
 

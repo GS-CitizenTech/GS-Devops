@@ -37,26 +37,27 @@ A aplicação disponibiliza uma API REST para gerenciamento de usuários e infor
 | JWT Bearer | Autenticação |
 | Swagger / OpenAPI | Documentação e testes da API |
 | xUnit | Testes automatizados |
-| Git e GitHub | Versionamento do projeto |
+| Git e Azure Repos | Versionamento do projeto |
+| Azure Boards | Tarefas ligadas a branches, commits e pull requests |
 | Azure DevOps (Pipelines YAML) | CI/CD: build, testes, artefato e deploy |
 | Azure Web App (Linux) | Hospedagem da API em nuvem |
 | Oracle Database FIAP | Banco de dados em nuvem |
 
 ## Arquitetura da solução + Fluxo CI/CD
 
-![Arquitetura e fluxo CI/CD](docs/arquitetura.png)
+![Arquitetura e fluxo CI/CD](docs/arquitetura.svg)
 
-1. O desenvolvedor faz commit e `git push` na branch `master` do GitHub.
-2. O push dispara automaticamente a pipeline no Azure DevOps (`azure-pipelines.yml`).
-3. **CI:** restore e build da `AlertaCidadao.sln` com .NET 10.
-4. **CI:** execução dos 34 testes automatizados (xUnit), com resultados publicados na aba *Tests*.
-5. **CI:** publish da API e publicação do artefato `drop` no Azure DevOps.
-6. **CD:** o stage de deploy começa somente após o novo artefato ser gerado com sucesso.
-7. **CD:** as configurações protegidas são aplicadas e o artefato é implantado no Azure Web App.
-8. A API acessa o Oracle Database da FIAP via Entity Framework Core.
-9. O usuário final (cidadão ou gestor) consome a API publicada via HTTPS com token JWT.
+1. A tarefa é criada no Azure Boards e vinculada à branch e ao pull request.
+2. A equipe trabalha em uma branch de tarefa no Azure Repos e abre um PR para `main`.
+3. A branch `main` deve exigir revisor, vínculo com Work Item e revisor padrão; alterações entram por merge do PR.
+4. O merge na `main` dispara `azure-pipeline.yml`.
+5. **CI:** restore, build .NET 10, testes xUnit, publicação dos resultados e artefato `drop`.
+6. **CD:** após CI bem-sucedida, configurações protegidas são aplicadas e o pacote é implantado no Azure App Service.
+7. A API acessa o Oracle da FIAP pelo Entity Framework Core e atende via HTTPS/JWT.
 
-O professor é convidado no projeto do Azure DevOps com acesso **Basic**.
+O projeto no Azure DevOps deve permanecer privado. Adicione o professor com nível **Basic** na organização e **Project Administrators** no projeto, usando o e-mail informado pela FIAP.
+
+Consulte [o roteiro de apresentação e demonstração](docs/roteiro-apresentacao.md) para a ordem sugerida do vídeo e a lista de verificação da entrega.
 
 ## Pipeline CI/CD (Azure DevOps)
 
@@ -67,19 +68,24 @@ O professor é convidado no projeto do Azure DevOps com acesso **Basic**.
 | CI | DotNetCoreCLI test | Executa os testes e publica os resultados |
 | CI | DotNetCoreCLI publish | Gera o pacote .zip da `AlertaCidadao.API` |
 | CI | PublishBuildArtifacts | Publica o artefato `drop` |
-| CD | AzureAppServiceSettings | Grava a connection string do Oracle e a chave JWT no Web App |
+| CD | AzureAppServiceSettings | Aplica a connection string do Oracle e a chave JWT no Web App |
 | CD | AzureWebApp | Faz o deploy do artefato no Azure Web App (Linux, .NET 10) |
 
 **Variáveis protegidas:** o variable group `sprint4-secrets` (Pipelines > Library) guarda `ORACLE_CONNECTION_STRING` e `JWT_SIGNING_KEY` como secretas. Nenhuma senha ou chave fica no repositório.
 
-**Aplicação publicada:** `app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net` · Swagger em `/swagger` · Health check em `/health/ready`
+**Aplicação publicada:** [Alerta Cidadão no Azure](https://app-alertacidadao-rm563088-ckgwcwdhgubua2aa.brazilsouth-01.azurewebsites.net) · Swagger em `/swagger` · Health check em `/health/ready`. O plano existente está em `rg-sprint4`, região Brazil South, SKU gratuito F1.
 
-### Evidências do CRUD no banco
+### Conferência de persistência no banco
 
 ```sql
-SELECT * FROM PONTO_MONITORAMENTO;                      -- após o POST
-SELECT * FROM PONTO_MONITORAMENTO WHERE ID_PONTO = :id; -- após GET, PUT e DELETE (ATIVO = 0)
+SELECT * FROM USUARIO;
+SELECT * FROM PONTO_MONITORAMENTO;
+SELECT * FROM LEITURA_ENCHENTE;
+SELECT * FROM ALERTA;
+SELECT * FROM REQUISICAO_IDEMPOTENCIA;
 ```
+
+Na gravação, mostre cada POST, GET, PUT e DELETE pelo Swagger e comprove no SQL Developer a persistência de cada uma das cinco tabelas. Para registros com exclusão lógica, confirme a coluna `ATIVO`/`STATUS` depois do DELETE. O GET demonstra a resposta da API; o `SELECT` no Oracle é a evidência de persistência pedida pela entrega.
 
 ## Arquitetura do projeto
 
@@ -106,9 +112,14 @@ GS-.NET/
 │   └── AlertaCidadao.UnitTests/
 │
 ├── docs/
-│   ├── arquitetura.png
+│   ├── arquitetura.svg
+│   ├── diagram.mmd
 │   └── HealthChecks.md
 │
+├── scripts/
+│   ├── provision-azure.sh
+│   └── script-bd.sql
+├── azure-pipeline.yml
 ├── azure-pipelines.yml
 └── AlertaCidadao.sln
 ```
@@ -125,7 +136,8 @@ GS-.NET/
 
 Antes de executar o projeto, é necessário ter instalado:
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Azure CLI, autenticado na assinatura que contém os recursos
 - [Oracle Database](https://www.oracle.com/database/)
 - [Git](https://git-scm.com/)
 - Visual Studio ou Visual Studio Code (opcional)
@@ -188,6 +200,18 @@ A aplicação estará disponível em:
 ```text
 http://localhost:5075
 ```
+
+## Provisionar a infraestrutura
+
+O script usa Azure CLI, cria apenas recursos ausentes e reutiliza por padrão os nomes e a região da implantação atual. O plano padrão é F1. Antes de executar, autentique-se com `az login` e selecione a assinatura correta com `az account set --subscription <ID-ou-nome>`.
+
+```bash
+bash scripts/provision-azure.sh
+```
+
+É possível informar `RESOURCE_GROUP`, `LOCATION`, `PLAN_NAME`, `PLAN_SKU` e `WEB_APP_NAME` como variáveis de ambiente. Alterar `PLAN_SKU` para uma opção paga pode gerar cobrança. O script não configura segredos; isso é feito pela Library do Azure Pipelines.
+
+O DDL está em `scripts/script-bd.sql`. Ele cria as cinco tabelas usadas pela aplicação: `USUARIO`, `PONTO_MONITORAMENTO`, `LEITURA_ENCHENTE`, `ALERTA` e `REQUISICAO_IDEMPOTENCIA`.
 
 ## Documentação da API
 

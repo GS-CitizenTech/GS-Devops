@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using AlertaCidadao.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,6 +72,8 @@ public sealed class HealthCheckEndpointTests
     private static async Task<WebApplication> CriarAplicacaoAsync(bool oracleDisponivel = false)
     {
         var builder = WebApplication.CreateBuilder();
+        // Avoid the Windows Event Log provider in TestServer runs (it may require admin rights).
+        builder.Logging.ClearProviders();
         builder.WebHost.UseTestServer();
         if (oracleDisponivel)
         {

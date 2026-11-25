@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="700" viewBox="0 0 1260 700" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura do Alerta Cidadão e fluxo CI/CD</title>
+  <desc id="desc">Azure Boards e Azure Repos levam, após merge protegido na Main, à pipeline CI com testes e artefato, depois à implantação no App Service e conexão com Oracle FIAP.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11 Z" fill="#52637a"/></marker>
+    <style>
+      text { font-family: Segoe UI, Arial, sans-serif; fill: #162338; }
+      .title { font-size: 29px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #4b5c72; }
+      .box { fill: #ffffff; stroke: #6a7f99; stroke-width: 2; rx: 16; }
+      .blue { fill: #e8f1ff; stroke: #2878c8; }
+      .purple { fill: #f2ecff; stroke: #7452aa; }
+      .green { fill: #e8f7ef; stroke: #2b8b58; }
+      .orange { fill: #fff3e4; stroke: #cd7620; }
+      .head { font-size: 20px; font-weight: 700; text-anchor: middle; }
+      .body { font-size: 15px; text-anchor: middle; fill: #35445a; }
+      .arrow { fill: none; stroke: #52637a; stroke-width: 3; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 8 7; }
+      .group { fill: #f7f9fc; stroke: #b9c5d4; stroke-width: 2; rx: 22; }
+      .label { font-size: 17px; font-weight: 700; fill: #34445b; }
+    </style>
+  </defs>
+  <rect width="1260" height="700" fill="#f4f7fb"/>
+  <text x="56" y="57" class="title">Alerta Cidadão — arquitetura e entrega contínua</text>
+  <text x="56" y="88" class="subtitle">Tarefa vinculada → PR para Main protegida → CI com testes → CD automático</text>
+
+  <rect x="40" y="120" width="1190" height="320" class="group"/>
+  <text x="68" y="154" class="label">Azure DevOps — projeto privado</text>
+
+  <rect x="78" y="210" width="170" height="104" class="box blue"/>
+  <text x="163" y="250" class="head">Azure Boards</text>
+  <text x="163" y="278" class="body">Work Item da tarefa</text>
+
+  <rect x="310" y="210" width="190" height="104" class="box blue"/>
+  <text x="405" y="249" class="head">Azure Repos</text>
+  <text x="405" y="278" class="body">branch + PR vinculado</text>
+
+  <rect x="562" y="210" width="184" height="104" class="box purple"/>
+  <text x="654" y="249" class="head">Main protegida</text>
+  <text x="654" y="278" class="body">revisor + merge do PR</text>
+
+  <rect x="808" y="210" width="176" height="104" class="box green"/>
+  <text x="896" y="249" class="head">CI</text>
+  <text x="896" y="278" class="body">.NET 10 + xUnit</text>
+
+  <rect x="1045" y="210" width="150" height="104" class="box green"/>
+  <text x="1120" y="249" class="head">Artefato</text>
+  <text x="1120" y="278" class="body">pacote drop</text>
+
+  <path d="M248 262 H300" class="arrow"/>
+  <path d="M500 262 H552" class="arrow"/>
+  <path d="M746 262 H798" class="arrow"/>
+  <path d="M984 262 H1035" class="arrow"/>
+
+  <rect x="540" y="505" width="205" height="105" class="box orange"/>
+  <text x="642" y="545" class="head">CD</text>
+  <text x="642" y="574" class="body">deploy após CI aprovada</text>
+
+  <rect x="835" y="505" width="205" height="105" class="box blue"/>
+  <text x="937" y="545" class="head">Azure App Service</text>
+  <text x="937" y="574" class="body">Linux · API .NET 10</text>
+
+  <rect x="1080" y="505" width="145" height="105" class="box purple"/>
+  <text x="1152" y="545" class="head">Oracle FIAP</text>
+  <text x="1152" y="574" class="body">banco de dados</text>
+
+  <path d="M1120 314 V402 H642 V495" class="arrow"/>
+  <path d="M745 557 H825" class="arrow"/>
+  <path d="M1040 557 H1070" class="arrow"/>
+
+  <rect x="91" y="505" width="300" height="105" class="box"/>
+  <text x="241" y="545" class="head">Library: sprint4-secrets</text>
+  <text x="241" y="574" class="body">connection string + chave JWT</text>
+  <path d="M391 557 H530" class="arrow dashed"/>
+
+  <text x="58" y="660" class="subtitle">O cidadão/gestor consome a API via HTTPS com token JWT. O Oracle é acessado pela camada de infraestrutura (EF Core).</text>
+</svg>
